@@ -74,9 +74,37 @@ body {
   letter-spacing: -0.02em;
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .count {
   font-size: 13px;
   color: var(--muted);
+}
+
+.reset-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reset-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.reset-btn:not(:disabled):active {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 /* ---- play ---- */

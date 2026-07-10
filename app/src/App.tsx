@@ -17,11 +17,31 @@ export function App() {
 
   const [a, b] = game.pair;
 
+  const handleReset = () => {
+    if (
+      game.count === 0 ||
+      window.confirm("Start over? This clears your current preferences.")
+    ) {
+      game.reset();
+      setView("play");
+    }
+  };
+
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">jayobee</div>
-        <div className="count">{game.count} choices</div>
+        <div className="topbar-right">
+          <span className="count">{game.count} choices</span>
+          <button
+            className="reset-btn"
+            onClick={handleReset}
+            type="button"
+            disabled={game.count === 0}
+          >
+            Reset
+          </button>
+        </div>
       </header>
 
       {view === "play" ? (

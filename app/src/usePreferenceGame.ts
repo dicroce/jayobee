@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import {
   PreferenceModel,
   explain,
-  rankJobs,
+  diverseTopJobs,
   randomPair,
   mostInformativePair,
   mulberry32,
@@ -102,7 +102,7 @@ export function usePreferenceGame() {
   const results = useCallback((): GameResults => {
     const model = modelRef.current!;
     const { likes, dislikes } = explain(model, dataset.axes, 5);
-    return { likes, dislikes, top: rankJobs(model, dataset.jobs).slice(0, 12) };
+    return { likes, dislikes, top: diverseTopJobs(model, dataset.jobs, { count: 12 }) };
   }, []);
 
   const reset = useCallback(() => {

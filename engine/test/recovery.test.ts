@@ -4,6 +4,7 @@ import {
   PreferenceModel,
   explain,
   rankJobs,
+  diverseTopJobs,
   randomPair,
   mostInformativePair,
   mulberry32,
@@ -99,6 +100,47 @@ describe("active learning (info-gain pair selection)", () => {
     );
 
     expect(infoMean).toBeGreaterThan(randomMean + 0.03);
+  });
+});
+
+describe("diversified results (MMR)", () => {
+  function meanPairwiseCos(jobs: Job[]): number {
+    let sum = 0;
+    let count = 0;
+    for (let i = 0; i < jobs.length; i++) {
+      for (let j = i + 1; j < jobs.length; j++) {
+        sum += cosine(jobs[i].v, jobs[j].v);
+        count++;
+      }
+    }
+    return sum / count;
+  }
+
+  it("preserves the #1 match but reduces redundancy vs the raw ranking", () => {
+    // multi-faceted preference (like a real user) -> raw ranking clusters, but
+    // there are distinct good-fit sub-clusters for diversification to surface.
+    const wTrue = new Array(dim).fill(0);
+    wTrue[axisIndex("Investigative")] = 1.6;
+    wTrue[axisIndex("Realistic")] = 0.8;
+    wTrue[axisIndex("Independence (Value)")] = 0.7;
+    wTrue[axisIndex("Social")] = -1.0;
+    const rand = mulberry32(3);
+    const model = new PreferenceModel({ dim, learningRate: 0.2, l2: 0.01 });
+    const util = (v: number[]) => v.reduce((s, x, i) => s + wTrue[i] * x, 0);
+    for (let k = 0; k < 300; k++) {
+      const [a, b] = randomPair(data.jobs, rand);
+      const pa = 1 / (1 + Math.exp(-(util(a.v) - util(b.v))));
+      const aWins = rand() < pa;
+      model.observe(aWins ? a.v : b.v, aWins ? b.v : a.v);
+    }
+
+    const raw = rankJobs(model, data.jobs).slice(0, 12).map((s) => s.job);
+    const diverse = diverseTopJobs(model, data.jobs, { count: 12 }).map((s) => s.job);
+
+    // best match is unchanged
+    expect(diverse[0].code).toBe(raw[0].code);
+    // and the list is genuinely less redundant (clear margin, not float noise)
+    expect(meanPairwiseCos(diverse)).toBeLessThan(meanPairwiseCos(raw) - 0.05);
   });
 });
 

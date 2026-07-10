@@ -113,6 +113,84 @@ export function rankJobs(model: PreferenceModel, jobs: readonly Job[]): ScoredJo
     .sort((a, b) => b.score - a.score);
 }
 
+export interface DiverseOptions {
+  /** how many jobs to return */
+  count?: number;
+  /** draw from this many top-utility jobs, so diversity never surfaces a bad fit */
+  poolSize?: number;
+  /** relevance vs. diversity: 1 = pure utility (clones), lower = more varied */
+  lambda?: number;
+}
+
+function unit(v: readonly number[]): Float64Array {
+  const u = new Float64Array(v.length);
+  let n = 0;
+  for (let i = 0; i < v.length; i++) n += v[i] * v[i];
+  const inv = 1 / (Math.sqrt(n) + 1e-12);
+  for (let i = 0; i < v.length; i++) u[i] = v[i] * inv;
+  return u;
+}
+
+function dot(a: Float64Array, b: Float64Array): number {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
+
+/**
+ * Diversified top matches via Maximal Marginal Relevance. A strong single-axis
+ * preference makes the raw utility ranking collapse into near-clones (12 flavors
+ * of physicist); MMR instead greedily picks jobs that are high-utility *and*
+ * dissimilar from those already chosen, so the list spans your distinct good-fit
+ * clusters. The #1 pick is still your single best match (no diversity penalty on
+ * the first selection).
+ */
+export function diverseTopJobs(
+  model: PreferenceModel,
+  jobs: readonly Job[],
+  opts: DiverseOptions = {},
+): ScoredJob[] {
+  const count = opts.count ?? 12;
+  const poolSize = opts.poolSize ?? 60;
+  // 0.5 is the standard MMR balance; empirically it surfaces distinct good-fit
+  // clusters (e.g. hands-on roles beside research roles) rather than near-clones,
+  // while the poolSize cap keeps every pick a genuine top match.
+  const lambda = opts.lambda ?? 0.5;
+
+  const pool = rankJobs(model, jobs).slice(0, Math.max(poolSize, count));
+  // normalize utility to [0,1] within the pool so it's comparable to cosine sim
+  const scores = pool.map((r) => r.score);
+  const min = Math.min(...scores);
+  const span = Math.max(...scores) - min || 1;
+  const rel = pool.map((r) => (r.score - min) / span);
+  const units = pool.map((r) => unit(r.job.v));
+
+  const selected: number[] = [];
+  const remaining = new Set(pool.map((_, i) => i));
+  while (selected.length < count && remaining.size > 0) {
+    let bestIdx = -1;
+    let bestVal = -Infinity;
+    for (const i of remaining) {
+      let maxSim = 0;
+      if (selected.length > 0) {
+        maxSim = -Infinity;
+        for (const s of selected) {
+          const sim = dot(units[i], units[s]);
+          if (sim > maxSim) maxSim = sim;
+        }
+      }
+      const mmr = lambda * rel[i] - (1 - lambda) * maxSim;
+      if (mmr > bestVal) {
+        bestVal = mmr;
+        bestIdx = i;
+      }
+    }
+    selected.push(bestIdx);
+    remaining.delete(bestIdx);
+  }
+  return selected.map((i) => pool[i]);
+}
+
 export interface AxisWeight {
   axis: string;
   block: string;

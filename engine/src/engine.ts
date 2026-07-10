@@ -1,4 +1,5 @@
 import type { Axis, Job } from "./types";
+import { invert, quadForm } from "./linalg";
 
 /**
  * The preference engine.
@@ -27,14 +28,28 @@ const sigmoid = (z: number): number => 1 / (1 + Math.exp(-z));
 export class PreferenceModel {
   /** The learned preference direction. Public so callers can inspect/serialize. */
   readonly w: Float64Array;
+  /**
+   * Running Fisher information of w (row-major n×n): A = l2·I + Σ p(1-p)·d·dᵀ over
+   * observed comparisons. A⁻¹ is the posterior covariance of w — the active-learning
+   * selector uses it to find the pair that reveals the most about still-uncertain axes.
+   * Public so it can be serialized/restored alongside w.
+   */
+  readonly info: Float64Array;
+  private readonly dim: number;
+  private readonly scratch: Float64Array;
   private readonly lr: number;
   private readonly l2: number;
   private nUpdates = 0;
 
   constructor(opts: ModelOptions) {
-    this.w = new Float64Array(opts.dim);
+    const n = opts.dim;
+    this.dim = n;
+    this.w = new Float64Array(n);
+    this.scratch = new Float64Array(n);
+    this.info = new Float64Array(n * n);
     this.lr = opts.learningRate ?? 0.2;
     this.l2 = opts.l2 ?? 0.01;
+    for (let i = 0; i < n; i++) this.info[i * n + i] = this.l2; // ridge prior precision
   }
 
   /** Utility of a feature vector: u(x) = w · x. */
@@ -60,12 +75,23 @@ export class PreferenceModel {
    */
   observe(winner: readonly number[], loser: readonly number[]): void {
     const w = this.w;
+    const n = this.dim;
+    const d = this.scratch;
     let z = 0;
-    for (let i = 0; i < w.length; i++) z += w[i] * (winner[i] - loser[i]);
-    const g = 1 - sigmoid(z);
-    for (let i = 0; i < w.length; i++) {
-      const d = winner[i] - loser[i];
-      w[i] += this.lr * (g * d - this.l2 * w[i]);
+    for (let i = 0; i < n; i++) {
+      d[i] = winner[i] - loser[i];
+      z += w[i] * d[i];
+    }
+    const p = sigmoid(z);
+    const g = 1 - p; // gradient scale of the log-likelihood
+    for (let i = 0; i < n; i++) w[i] += this.lr * (g * d[i] - this.l2 * w[i]);
+    // accumulate Fisher information: A += p(1-p)·d·dᵀ
+    const pq = p * (1 - p);
+    const info = this.info;
+    for (let i = 0; i < n; i++) {
+      const di = pq * d[i];
+      const base = i * n;
+      for (let j = 0; j < n; j++) info[base + j] += di * d[j];
     }
     this.nUpdates++;
   }
@@ -155,6 +181,47 @@ export function mostUncertainPair(
     if (gap < bestGap) {
       bestGap = gap;
       best = pair;
+    }
+  }
+  return best!;
+}
+
+/**
+ * Active learning, tuned for fastest learning: from a sampled pool of candidate
+ * pairs, return the one with the greatest expected information gain about w:
+ *
+ *     gain(a, b) = p(1-p) · (dᵀ A⁻¹ d),   d = a - b,  p = P(a ≻ b)
+ *
+ * The first factor p(1-p) is "surprise" (largest when the outcome is a toss-up —
+ * a predictable answer teaches nothing). The second factor dᵀA⁻¹d is how far the
+ * pair differs *along directions we're still uncertain about* — it shrinks axes
+ * we've already pinned down, so the selector automatically stops re-probing known
+ * axes and explores new ones. Early on (A = l2·I, w = 0) this reduces to picking
+ * the most different pairs; it sharpens as evidence accumulates.
+ */
+export function mostInformativePair(
+  model: PreferenceModel,
+  jobs: readonly Job[],
+  rand: () => number,
+  sampleSize = 256,
+): [Job, Job] {
+  const n = model.w.length;
+  const cov = invert(model.info, n); // A⁻¹ = posterior covariance of w (once per call)
+  const d = new Float64Array(n);
+  let best: [Job, Job] | null = null;
+  let bestGain = -Infinity;
+  for (let s = 0; s < sampleSize; s++) {
+    const [a, b] = randomPair(jobs, rand);
+    let z = 0;
+    for (let i = 0; i < n; i++) {
+      d[i] = a.v[i] - b.v[i];
+      z += model.w[i] * d[i];
+    }
+    const p = sigmoid(z);
+    const gain = p * (1 - p) * quadForm(cov, d, n);
+    if (gain > bestGain) {
+      bestGain = gain;
+      best = [a, b];
     }
   }
   return best!;

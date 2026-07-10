@@ -5,8 +5,10 @@ import {
   explain,
   rankJobs,
   randomPair,
+  mostInformativePair,
   mulberry32,
 } from "../src/engine";
+import type { Job } from "../src/types";
 
 const data = loadDataset();
 const dim = data.axes.length;
@@ -48,6 +50,55 @@ describe("dataset artifact", () => {
     expect(data.jobs.length).toBeGreaterThan(800);
     expect(data.axes.length).toBe(28);
     for (const j of data.jobs) expect(j.v.length).toBe(dim);
+  });
+});
+
+/** Run a simulated user with a given pair-selection strategy; return cosine(w, wTrue). */
+function convergence(
+  wTrue: number[],
+  nComparisons: number,
+  seed: number,
+  select: (m: PreferenceModel, rand: () => number) => [Job, Job],
+): number {
+  const rand = mulberry32(seed);
+  const model = new PreferenceModel({ dim, learningRate: 0.2, l2: 0.01 });
+  const util = (v: number[]) => v.reduce((s, x, i) => s + wTrue[i] * x, 0);
+  for (let k = 0; k < nComparisons; k++) {
+    const [a, b] = select(model, rand);
+    const pa = 1 / (1 + Math.exp(-(util(a.v) - util(b.v))));
+    const aWins = rand() < pa;
+    model.observe(aWins ? a.v : b.v, aWins ? b.v : a.v);
+  }
+  return cosine(model.w, wTrue);
+}
+
+describe("active learning (info-gain pair selection)", () => {
+  it("returns a valid distinct pair", () => {
+    const model = new PreferenceModel({ dim });
+    const [a, b] = mostInformativePair(model, data.jobs, mulberry32(1), 64);
+    expect(a.code).not.toBe(b.code);
+  });
+
+  it("converges faster than random selection", () => {
+    // multi-axis true preference; average over seeds (deterministic given fixed seeds)
+    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+    const N = 25;
+    const wTrue = new Array(dim).fill(0);
+    wTrue[axisIndex("Investigative")] = 1.3;
+    wTrue[axisIndex("Artistic")] = 0.9;
+    wTrue[axisIndex("Social")] = -1.1;
+
+    const mean = (f: (s: number) => number) =>
+      seeds.reduce((acc, s) => acc + f(s), 0) / seeds.length;
+
+    const randomMean = mean((s) =>
+      convergence(wTrue, N, s, (_m, r) => randomPair(data.jobs, r)),
+    );
+    const infoMean = mean((s) =>
+      convergence(wTrue, N, s, (m, r) => mostInformativePair(m, data.jobs, r, 256)),
+    );
+
+    expect(infoMean).toBeGreaterThan(randomMean + 0.03);
   });
 });
 

@@ -4,7 +4,7 @@ import {
   explain,
   rankJobs,
   randomPair,
-  mostUncertainPair,
+  mostInformativePair,
   mulberry32,
   type ScoredJob,
   type AxisWeight,
@@ -12,12 +12,11 @@ import {
 import type { Job } from "@engine/types";
 import { dataset } from "./data";
 
-/** Rounds of random pairs before switching to active (uncertainty) sampling. */
-const WARMUP = 6;
 const STORAGE_KEY = "jayobee.v1";
 
 interface Saved {
   w: number[];
+  info: number[];
   count: number;
 }
 
@@ -45,7 +44,10 @@ export function usePreferenceGame() {
   if (modelRef.current === null) {
     const model = new PreferenceModel({ dim });
     const saved = loadSaved();
-    if (saved && saved.w.length === dim) model.w.set(saved.w);
+    if (saved && saved.w.length === dim) {
+      model.w.set(saved.w);
+      if (saved.info?.length === dim * dim) model.info.set(saved.info);
+    }
     modelRef.current = model;
     randRef.current = mulberry32((Date.now() & 0xffffffff) >>> 0);
   }
@@ -61,21 +63,23 @@ export function usePreferenceGame() {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ w: Array.from(model.w), count: c }),
+        JSON.stringify({
+          w: Array.from(model.w),
+          info: Array.from(model.info),
+          count: c,
+        }),
       );
     } catch {
       /* storage full / unavailable — non-fatal */
     }
   }, []);
 
-  const nextPair = useCallback((n: number) => {
+  const nextPair = useCallback(() => {
     const model = modelRef.current!;
     const rand = randRef.current!;
-    setPair(
-      n < WARMUP
-        ? randomPair(dataset.jobs, rand)
-        : mostUncertainPair(model, dataset.jobs, rand, 96),
-    );
+    // Info-gain selects diverse pairs when it knows nothing and sharpens as it
+    // learns, so no separate random warmup is needed.
+    setPair(mostInformativePair(model, dataset.jobs, rand, 256));
   }, []);
 
   /** Record a choice (winner = 0 for left/top card, 1 for right/bottom). */
@@ -88,12 +92,12 @@ export function usePreferenceGame() {
       const n = count + 1;
       setCount(n);
       persist(n);
-      nextPair(n);
+      nextPair();
     },
     [pair, count, persist, nextPair],
   );
 
-  const skip = useCallback(() => nextPair(count), [count, nextPair]);
+  const skip = useCallback(() => nextPair(), [nextPair]);
 
   const results = useCallback((): GameResults => {
     const model = modelRef.current!;
@@ -106,7 +110,7 @@ export function usePreferenceGame() {
     modelRef.current = model;
     localStorage.removeItem(STORAGE_KEY);
     setCount(0);
-    nextPair(0);
+    nextPair();
   }, [dim, nextPair]);
 
   return { pair, count, choose, skip, results, reset };

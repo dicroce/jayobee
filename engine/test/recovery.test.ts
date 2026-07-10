@@ -5,6 +5,8 @@ import {
   explain,
   rankJobs,
   diverseTopJobs,
+  readout,
+  axisStats,
   randomPair,
   mostInformativePair,
   mulberry32,
@@ -100,6 +102,41 @@ describe("active learning (info-gain pair selection)", () => {
     );
 
     expect(infoMean).toBeGreaterThan(randomMean + 0.03);
+  });
+});
+
+describe("confidence & stability", () => {
+  function trainInvestigative(n: number, seed: number): PreferenceModel {
+    const wTrue = new Array(dim).fill(0);
+    wTrue[axisIndex("Investigative")] = 1.8;
+    wTrue[axisIndex("Social")] = -1.2;
+    const rand = mulberry32(seed);
+    const model = new PreferenceModel({ dim, learningRate: 0.2, l2: 0.01 });
+    const util = (v: number[]) => v.reduce((s, x, i) => s + wTrue[i] * x, 0);
+    for (let k = 0; k < n; k++) {
+      const [a, b] = mostInformativePair(model, data.jobs, rand, 128);
+      const pa = 1 / (1 + Math.exp(-(util(a.v) - util(b.v))));
+      const aWins = rand() < pa;
+      model.observe(aWins ? a.v : b.v, aWins ? b.v : a.v);
+    }
+    return model;
+  }
+
+  it("a resolved axis is more confident than a neutral one", () => {
+    const model = trainInvestigative(80, 5);
+    const stats = axisStats(model, data.axes);
+    const inv = stats[axisIndex("Investigative")];
+    const neutral = stats[axisIndex("Attention to Detail")]; // not in wTrue
+    expect(Math.abs(inv.z)).toBeGreaterThan(Math.abs(neutral.z));
+    expect(inv.z).toBeGreaterThan(0);
+  });
+
+  it("stability rises with more comparisons and stays in [0,1]", () => {
+    const early = readout(trainInvestigative(15, 7), data.axes).stability;
+    const late = readout(trainInvestigative(80, 7), data.axes).stability;
+    expect(early).toBeGreaterThanOrEqual(0);
+    expect(late).toBeLessThanOrEqual(1);
+    expect(late).toBeGreaterThan(early);
   });
 });
 

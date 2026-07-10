@@ -1,3 +1,4 @@
+import { confidenceTier, type AxisStat } from "@engine/engine";
 import type { GameResults } from "../usePreferenceGame";
 
 interface Props {
@@ -7,25 +8,48 @@ interface Props {
   onReset: () => void;
 }
 
+function Chip({ stat, kind }: { stat: AxisStat; kind: "like" | "dislike" }) {
+  const tier = confidenceTier(stat.z);
+  return (
+    <span
+      className={`chip chip-${kind} conf-${tier}`}
+      title={`${stat.block} · confidence: ${tier}`}
+    >
+      {stat.axis}
+    </span>
+  );
+}
+
 export function Results({ count, results, onKeepPlaying, onReset }: Props) {
-  const { likes, dislikes, top } = results;
+  const { likes, dislikes, stability, top } = results;
+  const pct = Math.round(stability * 100);
+  const settled = pct >= 70;
 
   return (
     <div className="results">
       <h2>Your preferences</h2>
-      <p className="muted">
-        Learned from {count} choice{count === 1 ? "" : "s"}
-        {count < 15 ? " — keep going for a sharper read." : "."}
-      </p>
+
+      <div className="stability">
+        <div className="stability-head">
+          <span>Profile {settled ? "settled" : "still forming"}</span>
+          <span className="muted">{pct}%</span>
+        </div>
+        <div className="meter">
+          <div className="meter-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <p className="muted stability-note">
+          {settled
+            ? `Learned from ${count} choices. Faded tags are still firming up.`
+            : `Learned from ${count} choices — keep playing to lock these in.`}
+        </p>
+      </div>
 
       <section>
         <h3>You're drawn to</h3>
         <div className="chips">
           {likes.length === 0 && <span className="muted">Not enough signal yet.</span>}
-          {likes.map((l) => (
-            <span key={l.axis} className="chip chip-like" title={l.block}>
-              {l.axis}
-            </span>
+          {likes.map((s) => (
+            <Chip key={s.axis} stat={s} kind="like" />
           ))}
         </div>
       </section>
@@ -34,10 +58,8 @@ export function Results({ count, results, onKeepPlaying, onReset }: Props) {
         <h3>And away from</h3>
         <div className="chips">
           {dislikes.length === 0 && <span className="muted">Not enough signal yet.</span>}
-          {dislikes.map((l) => (
-            <span key={l.axis} className="chip chip-dislike" title={l.block}>
-              {l.axis}
-            </span>
+          {dislikes.map((s) => (
+            <Chip key={s.axis} stat={s} kind="dislike" />
           ))}
         </div>
       </section>

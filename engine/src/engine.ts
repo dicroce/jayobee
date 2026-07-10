@@ -38,7 +38,8 @@ export class PreferenceModel {
   private readonly dim: number;
   private readonly scratch: Float64Array;
   private readonly lr: number;
-  private readonly l2: number;
+  /** ridge strength; also the prior precision (prior variance per axis = 1/l2). */
+  readonly l2: number;
   private nUpdates = 0;
 
   constructor(opts: ModelOptions) {
@@ -215,6 +216,96 @@ export function explain(
     .slice(-topK)
     .reverse();
   return { likes, dislikes };
+}
+
+export interface AxisStat extends AxisWeight {
+  /** posterior std of this axis's weight (from A⁻¹). */
+  std: number;
+  /** Wald score weight/std — how many std devs the preference is from zero. */
+  z: number;
+  /** fraction of this axis's prior uncertainty resolved so far, 0..1. */
+  resolution: number;
+}
+
+/** Per-axis weight plus its posterior uncertainty (Laplace approx: cov = A⁻¹). */
+export function axisStats(model: PreferenceModel, axes: readonly Axis[]): AxisStat[] {
+  const n = model.w.length;
+  const cov = invert(model.info, n);
+  const priorVar = 1 / model.l2;
+  return axes.map((a, i) => {
+    const variance = Math.max(cov[i * n + i], 0);
+    const std = Math.sqrt(variance);
+    const weight = model.w[i];
+    return {
+      axis: a.name,
+      block: a.block,
+      weight,
+      std,
+      z: std > 1e-12 ? weight / std : 0,
+      resolution: Math.min(1, Math.max(0, 1 - variance / priorVar)),
+    };
+  });
+}
+
+/** z at/above which an axis reads as fully confident (used for tiering + stability). */
+export const Z_CONFIDENT = 2.0;
+
+export type Confidence = "high" | "medium" | "low";
+
+/** Map a Wald score to a coarse confidence tier for display. */
+export function confidenceTier(z: number): Confidence {
+  const a = Math.abs(z);
+  if (a >= Z_CONFIDENT) return "high";
+  if (a >= 1.0) return "medium";
+  return "low";
+}
+
+export interface Readout {
+  /** strongest positive preferences (top by weight), each carrying its confidence */
+  likes: AxisStat[];
+  /** strongest aversions */
+  dislikes: AxisStat[];
+  /**
+   * 0..1 "how settled": each axis's confidence saturates at Z_CONFIDENT and is
+   * weighted by how strong the preference is, so it tracks the axes you care about.
+   */
+  stability: number;
+}
+
+/**
+ * Confidence-aware readout. We always surface the top axes by weight (so the screen
+ * is never empty), but each one carries a `z` / confidence tier from its posterior
+ * uncertainty — the UI fades low-confidence axes so a noisy secondary that would flip
+ * between sessions is visibly marked "still forming" rather than asserted as fact.
+ */
+export function readout(
+  model: PreferenceModel,
+  axes: readonly Axis[],
+  opts: { topK?: number } = {},
+): Readout {
+  const topK = opts.topK ?? 5;
+  const stats = axisStats(model, axes);
+
+  const likes = stats
+    .filter((s) => s.weight > 0)
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, topK);
+  const dislikes = stats
+    .filter((s) => s.weight < 0)
+    .sort((a, b) => a.weight - b.weight)
+    .slice(0, topK);
+
+  // strength-weighted, saturating confidence over all axes
+  let num = 0;
+  let den = 0;
+  for (const s of stats) {
+    const conf = Math.min(1, Math.abs(s.z) / Z_CONFIDENT);
+    num += Math.abs(s.weight) * conf;
+    den += Math.abs(s.weight);
+  }
+  const stability = den > 0 ? num / den : 0;
+
+  return { likes, dislikes, stability };
 }
 
 /* ------------------------------------------------------------------ */

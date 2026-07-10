@@ -236,6 +236,36 @@ body {
   font-size: 14px;
 }
 
+.stability {
+  margin: 14px 0 6px;
+}
+
+.stability-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.meter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.stability-note {
+  margin: 8px 0 0;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -257,6 +287,15 @@ body {
 .chip-dislike {
   background: var(--dislike-bg);
   color: var(--dislike-text);
+}
+
+/* confidence tiers: fade the less-certain axes */
+.chip.conf-medium {
+  opacity: 0.66;
+}
+
+.chip.conf-low {
+  opacity: 0.38;
 }
 
 .matches {

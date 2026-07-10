@@ -1,13 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 import {
   PreferenceModel,
-  explain,
+  readout,
   diverseTopJobs,
   randomPair,
   mostInformativePair,
   mulberry32,
   type ScoredJob,
-  type AxisWeight,
+  type AxisStat,
 } from "@engine/engine";
 import type { Job } from "@engine/types";
 import { dataset } from "./data";
@@ -30,8 +30,9 @@ function loadSaved(): Saved | null {
 }
 
 export interface GameResults {
-  likes: AxisWeight[];
-  dislikes: AxisWeight[];
+  likes: AxisStat[];
+  dislikes: AxisStat[];
+  stability: number;
   top: ScoredJob[];
 }
 
@@ -101,8 +102,13 @@ export function usePreferenceGame() {
 
   const results = useCallback((): GameResults => {
     const model = modelRef.current!;
-    const { likes, dislikes } = explain(model, dataset.axes, 5);
-    return { likes, dislikes, top: diverseTopJobs(model, dataset.jobs, { count: 12 }) };
+    const { likes, dislikes, stability } = readout(model, dataset.axes, { topK: 5 });
+    return {
+      likes,
+      dislikes,
+      stability,
+      top: diverseTopJobs(model, dataset.jobs, { count: 12 }),
+    };
   }, []);
 
   const reset = useCallback(() => {

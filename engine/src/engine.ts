@@ -295,10 +295,12 @@ export function readout(
     .sort((a, b) => a.weight - b.weight)
     .slice(0, topK);
 
-  // strength-weighted, saturating confidence over all axes
+  // Confidence over the axes we actually DISPLAY, weighted by strength. Averaging
+  // over all 28 axes would let the ~20 near-zero noise axes (never confident) drag
+  // the score down permanently; this measures "how solid are the tags shown?".
   let num = 0;
   let den = 0;
-  for (const s of stats) {
+  for (const s of [...likes, ...dislikes]) {
     const conf = Math.min(1, Math.abs(s.z) / Z_CONFIDENT);
     num += Math.abs(s.weight) * conf;
     den += Math.abs(s.weight);

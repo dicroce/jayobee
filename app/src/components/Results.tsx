@@ -23,7 +23,7 @@ function Chip({ stat, kind }: { stat: AxisStat; kind: "like" | "dislike" }) {
 export function Results({ count, results, onKeepPlaying, onReset }: Props) {
   const { likes, dislikes, stability, top } = results;
   const pct = Math.round(stability * 100);
-  const settled = pct >= 70;
+  const settled = pct >= 60;
 
   return (
     <div className="results">

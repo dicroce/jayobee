@@ -63,6 +63,39 @@ AXES = [
     ("1.C.7.b", "work_styles", "IM", "Analytical Thinking",      "style"),
 ]
 
+# Concise one-line glosses for each axis (shown under the name in Explore mode).
+# Distilled from O*NET's element definitions, which are too long for a compact UI.
+AXIS_DESCRIPTIONS = {
+    "Realistic": "Hands-on, practical work with tools, machines, or the outdoors",
+    "Investigative": "Analyzing, researching, and solving problems with ideas",
+    "Artistic": "Creative, expressive, unstructured work",
+    "Social": "Helping, teaching, and serving people",
+    "Enterprising": "Leading, persuading, and taking business risks",
+    "Conventional": "Organized, detailed work with data and clear rules",
+    "Achievement": "Using your abilities and seeing concrete results",
+    "Working Conditions": "Job security, good pay, and comfortable conditions",
+    "Recognition": "Prestige, advancement, and room to lead",
+    "Relationships": "Friendly coworkers and being of service to others",
+    "Support": "Supportive management that backs you up",
+    "Independence (Value)": "Working on your own and making your own decisions",
+    "Achievement/Effort": "Setting high goals and working hard to reach them",
+    "Persistence": "Sticking with tasks despite obstacles",
+    "Initiative": "Taking on responsibilities and challenges yourself",
+    "Leadership": "A willingness to lead, take charge, and direct",
+    "Cooperation": "Being pleasant and easy to work with",
+    "Concern for Others": "Sensitivity to others' needs and feelings",
+    "Social Orientation": "Preferring to work with others rather than alone",
+    "Self-Control": "Staying composed and keeping emotions in check",
+    "Stress Tolerance": "Handling criticism and pressure calmly",
+    "Adaptability/Flexibility": "Being open to change and variety",
+    "Dependability": "Being reliable, responsible, and following through",
+    "Attention to Detail": "Being careful and thorough about details",
+    "Integrity": "Being honest and ethical",
+    "Independence (Style)": "Guiding yourself with little supervision",
+    "Innovation": "Creative, alternative thinking to invent new ideas",
+    "Analytical Thinking": "Analyzing information and reasoning with logic",
+}
+
 # After z-scoring, axes are reweighted so the three blocks are balanced (each
 # contributes equal variance via 1/sqrt(n_axes_in_block)) with interests emphasized
 # — RIASEC is the strongest vocational discriminator and, unweighted, the 16-axis
@@ -315,7 +348,8 @@ def main():
             ),
         },
         "axes": [
-            {"name": label, "block": block} for (_, _, _, label, block) in AXES
+            {"name": label, "block": block, "desc": AXIS_DESCRIPTIONS.get(label, "")}
+            for (_, _, _, label, block) in AXES
         ],
         "jobs": jobs,
     }

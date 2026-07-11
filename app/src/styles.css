@@ -221,18 +221,33 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0;
+  gap: 12px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.dir-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .dir-name {
   font-size: 15px;
-  font-weight: 550;
+  font-weight: 600;
+}
+
+.dir-desc {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .dir-btns {
   display: inline-flex;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 .dir-btns button {

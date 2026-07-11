@@ -3,6 +3,8 @@ export interface Axis {
   name: string;
   /** which O*NET block it came from: "interest" | "value" | "style" */
   block: string;
+  /** one-line gloss of what this direction means (shown in Explore) */
+  desc?: string;
 }
 
 /** Annual wage percentiles (BLS OEWS), USD. Display/filter only — never a taste axis. */

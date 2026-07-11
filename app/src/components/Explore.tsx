@@ -13,12 +13,12 @@ const randomJob = () => dataset.jobs[Math.floor(Math.random() * dataset.jobs.len
 
 // axis indices grouped by block, for the direction controls
 const AXES_BY_BLOCK = (() => {
-  const g: Record<string, { name: string; idx: number }[]> = {
+  const g: Record<string, { name: string; idx: number; desc?: string }[]> = {
     interest: [],
     value: [],
     style: [],
   };
-  dataset.axes.forEach((a, i) => g[a.block]?.push({ name: a.name, idx: i }));
+  dataset.axes.forEach((a, i) => g[a.block]?.push({ name: a.name, idx: i, desc: a.desc }));
   return g;
 })();
 
@@ -64,9 +64,12 @@ export function Explore({ onHome }: { onHome: () => void }) {
     }
   };
 
-  const dirRow = ({ name, idx }: { name: string; idx: number }) => (
+  const dirRow = ({ name, idx, desc }: { name: string; idx: number; desc?: string }) => (
     <div className="dir-row" key={idx}>
-      <span className="dir-name">{name}</span>
+      <span className="dir-label">
+        <span className="dir-name">{name}</span>
+        {desc && <span className="dir-desc">{desc}</span>}
+      </span>
       <div className="dir-btns">
         <button onClick={() => step(idx, -1, name)} type="button">
           less

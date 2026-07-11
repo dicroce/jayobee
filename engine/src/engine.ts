@@ -347,6 +347,49 @@ export function explainMatch(
   return { reasons, tradeoffs };
 }
 
+export interface StepCandidate {
+  job: Job;
+  /** how far it moved along the chosen axis, in the chosen direction */
+  onAxis: number;
+  /** how much everything else changed (distance in the other axes) */
+  offAxis: number;
+}
+
+/**
+ * Explore mode: from `from`, take a step along one interpretable axis. Returns the
+ * jobs that moved at least `minStep` in the chosen direction on that axis AND whose
+ * change is dominated by that axis (onAxis ≥ offAxis), ranked by nearest overall —
+ * so you "walk a ridge", climbing one trait while holding the rest of the job's
+ * character as fixed as possible. Model-free; pure navigation of the job space.
+ */
+export function stepAlongAxis(
+  from: Job,
+  axisIndex: number,
+  direction: 1 | -1,
+  jobs: readonly Job[],
+  opts: { minStep?: number; count?: number } = {},
+): StepCandidate[] {
+  const minStep = opts.minStep ?? 0.3;
+  const count = opts.count ?? 3;
+  const out: StepCandidate[] = [];
+  for (const job of jobs) {
+    if (job.code === from.code) continue;
+    const axisDelta = job.v[axisIndex] - from.v[axisIndex];
+    const onAxis = direction * axisDelta;
+    if (onAxis < minStep) continue; // must move meaningfully in the chosen direction
+    let sq = 0;
+    for (let i = 0; i < from.v.length; i++) {
+      const d = job.v[i] - from.v[i];
+      sq += d * d;
+    }
+    const offAxis = Math.sqrt(Math.max(0, sq - axisDelta * axisDelta));
+    out.push({ job, onAxis, offAxis });
+  }
+  // nearest on everything else — hold the rest of the job's character fixed
+  out.sort((a, b) => a.offAxis - b.offAxis);
+  return out.slice(0, count);
+}
+
 /* ------------------------------------------------------------------ */
 /* Pair selection                                                      */
 /* ------------------------------------------------------------------ */

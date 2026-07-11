@@ -9,6 +9,7 @@ import {
   axisStats,
   randomPair,
   mostInformativePair,
+  stepAlongAxis,
   mulberry32,
 } from "../src/engine";
 import type { Job } from "../src/types";
@@ -103,6 +104,26 @@ describe("active learning (info-gain pair selection)", () => {
 
     // info-gain must beat random; margin kept modest so it's robust to dataset changes
     expect(infoMean).toBeGreaterThan(randomMean + 0.01);
+  });
+});
+
+describe("explore (stepAlongAxis)", () => {
+  it("steps toward the chosen axis while staying nearby", () => {
+    const start = data.jobs.find((j) => j.title === "Carpenters")!;
+    const ai = axisIndex("Artistic");
+    const cands = stepAlongAxis(start, ai, 1, data.jobs, { count: 3 });
+    expect(cands.length).toBeGreaterThan(0);
+    for (const c of cands) {
+      expect(c.job.v[ai]).toBeGreaterThan(start.v[ai]); // genuinely more artistic
+      expect(c.onAxis).toBeGreaterThan(0);
+    }
+  });
+
+  it("reports a dead end at the extreme of an axis", () => {
+    // the single most-Investigative job can't step further up that axis
+    const ai = axisIndex("Investigative");
+    const top = [...data.jobs].sort((a, b) => b.v[ai] - a.v[ai])[0];
+    expect(stepAlongAxis(top, ai, 1, data.jobs)).toHaveLength(0);
   });
 });
 

@@ -120,6 +120,49 @@ def zscore(mat):
     return (mat - mean) / std_safe, mean, std
 
 
+def load_details(conn):
+    """Return a function code -> {jobZone, tasks, related} for the detail view."""
+    jz = {r[0]: r[1] for r in conn.execute("SELECT onetsoc_code, job_zone FROM job_zones")}
+    jzref = {
+        r[0]: {"name": (r[1].split(":", 1)[-1].strip() if r[1] else ""), "education": r[2]}
+        for r in conn.execute("SELECT job_zone, name, education FROM job_zone_reference")
+    }
+    titles = {r[0]: r[1] for r in conn.execute("SELECT onetsoc_code, title FROM occupation_data")}
+
+    tasks = {}
+    for code, task in conn.execute(
+        "SELECT onetsoc_code, task FROM task_statements WHERE task_type='Core' "
+        "ORDER BY onetsoc_code, task_id"
+    ):
+        lst = tasks.setdefault(code, [])
+        if len(lst) < 5:
+            lst.append(task)
+
+    related = {}
+    for code, rel in conn.execute(
+        "SELECT onetsoc_code, related_onetsoc_code FROM related_occupations "
+        "ORDER BY onetsoc_code, related_index"
+    ):
+        lst = related.setdefault(code, [])
+        if len(lst) < 6 and rel in titles:
+            lst.append({"code": rel, "title": titles[rel]})
+
+    def detail(code):
+        z = jz.get(code)
+        zinfo = jzref.get(z) if z else None
+        return {
+            "jobZone": (
+                {"zone": z, "name": zinfo["name"], "education": zinfo["education"]}
+                if zinfo
+                else None
+            ),
+            "tasks": tasks.get(code, []),
+            "related": related.get(code, []),
+        }
+
+    return detail
+
+
 def axis_weights():
     """Per-axis multipliers: block-balanced (1/sqrt(n_block)) with interests emphasized."""
     blocks = [b for (_, _, _, _, b) in AXES]
@@ -163,6 +206,8 @@ def main():
         print(f"Salary: matched {wage_hits}/{n} occupations from OEWS ({len(wages)} SOC codes loaded)")
     else:
         print("Salary: no data/oes_national.xlsx found — skipping wages (jobs get wage=null)")
+
+    detail = load_details(conn)  # job zone, core tasks, related careers
 
     # --- diagnostic 1: per-axis mean/std (native units) ---
     print("\nPer-axis native mean / std (spot degenerate axes):")
@@ -218,6 +263,7 @@ def main():
                 "desc": descs[i],
                 "v": [round(float(x), 4) for x in zmat[i]],
                 "wage": wage_for(codes[i]),
+                **detail(codes[i]),
             }
             for i in range(n)
         ],

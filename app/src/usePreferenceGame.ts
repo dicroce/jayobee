@@ -3,6 +3,7 @@ import {
   PreferenceModel,
   readout,
   diverseTopJobs,
+  explainMatch,
   randomPair,
   mostInformativePair,
   mulberry32,
@@ -111,6 +112,11 @@ export function usePreferenceGame() {
     };
   }, []);
 
+  const explainJob = useCallback(
+    (job: Job) => explainMatch(modelRef.current!, job, dataset.axes, { topK: 3 }),
+    [],
+  );
+
   const reset = useCallback(() => {
     const model = new PreferenceModel({ dim });
     modelRef.current = model;
@@ -119,5 +125,5 @@ export function usePreferenceGame() {
     nextPair();
   }, [dim, nextPair]);
 
-  return { pair, count, choose, skip, results, reset };
+  return { pair, count, choose, skip, results, reset, explainJob };
 }

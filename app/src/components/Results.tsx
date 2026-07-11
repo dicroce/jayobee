@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { confidenceTier, type AxisStat } from "@engine/engine";
+import { confidenceTier, type AxisStat, type MatchReason } from "@engine/engine";
+import type { Job } from "@engine/types";
 import type { GameResults } from "../usePreferenceGame";
+import { jobByCode } from "../data";
+import { JobDetail } from "./JobDetail";
 
 const usd = (n?: number | null) =>
   n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
@@ -8,6 +11,7 @@ const usd = (n?: number | null) =>
 interface Props {
   count: number;
   results: GameResults;
+  explainJob: (job: Job) => { reasons: MatchReason[]; tradeoffs: MatchReason[] };
   onKeepPlaying: () => void;
   onReset: () => void;
 }
@@ -24,11 +28,12 @@ function Chip({ stat, kind }: { stat: AxisStat; kind: "like" | "dislike" }) {
   );
 }
 
-export function Results({ count, results, onKeepPlaying, onReset }: Props) {
+export function Results({ count, results, explainJob, onKeepPlaying, onReset }: Props) {
   const { likes, dislikes, stability, top } = results;
   const pct = Math.round(stability * 100);
   const settled = pct >= 60;
 
+  const [selected, setSelected] = useState<Job | null>(null);
   const [sort, setSort] = useState<"fit" | "pay">("fit");
   const hasWages = top.some((s) => s.job.wage);
   const shown =
@@ -100,12 +105,19 @@ export function Results({ count, results, onKeepPlaying, onReset }: Props) {
         <ul className="matches">
           {shown.map((s) => (
             <li key={s.job.code}>
-              <span className="match-title">{s.job.title}</span>
-              {hasWages && (
-                <span className="match-wage" title="Median annual wage (BLS OEWS 2025)">
-                  {usd(s.job.wage?.median)}
+              <button className="match-row" onClick={() => setSelected(s.job)} type="button">
+                <span className="match-title">{s.job.title}</span>
+                <span className="match-right">
+                  {hasWages && (
+                    <span className="match-wage" title="Median annual wage (BLS OEWS 2025)">
+                      {usd(s.job.wage?.median)}
+                    </span>
+                  )}
+                  <span className="match-chevron" aria-hidden="true">
+                    ›
+                  </span>
                 </span>
-              )}
+              </button>
             </li>
           ))}
         </ul>
@@ -119,6 +131,18 @@ export function Results({ count, results, onKeepPlaying, onReset }: Props) {
           Start over
         </button>
       </div>
+
+      {selected && (
+        <JobDetail
+          job={selected}
+          explanation={explainJob(selected)}
+          onClose={() => setSelected(null)}
+          onOpenRelated={(code) => {
+            const j = jobByCode.get(code);
+            if (j) setSelected(j);
+          }}
+        />
+      )}
     </div>
   );
 }

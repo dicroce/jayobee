@@ -12,6 +12,18 @@ export interface Wage {
   p90: number | null;
 }
 
+/** Preparation level (O*NET Job Zone 1–5). */
+export interface JobZone {
+  zone: number;
+  name: string;
+  education: string;
+}
+
+export interface RelatedJob {
+  code: string;
+  title: string;
+}
+
 /** One occupation with its z-scored taste vector `v` (length === axes.length). */
 export interface Job {
   code: string;
@@ -20,6 +32,9 @@ export interface Job {
   v: number[];
   /** null when OEWS has no wage for this SOC (or no wage file was built in). */
   wage?: Wage | null;
+  jobZone?: JobZone | null;
+  tasks?: string[];
+  related?: RelatedJob[];
 }
 
 /** The static artifact emitted by the Python ETL (data/taste_vectors.json). */

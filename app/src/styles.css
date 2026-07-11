@@ -337,11 +337,6 @@ body {
 }
 
 .matches li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -349,9 +344,35 @@ body {
   border-bottom: none;
 }
 
+.match-row {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px;
+  text-align: left;
+}
+
+.match-row:active {
+  background: var(--surface-2);
+}
+
 .match-title {
   font-size: 16px;
   font-weight: 550;
+}
+
+.match-right {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .match-wage {
@@ -359,7 +380,115 @@ body {
   font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+}
+
+.match-chevron {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ---- job detail sheet ---- */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 18, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 20;
+}
+
+.sheet {
+  background: var(--bg);
+  width: 100%;
+  max-width: 640px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding-top: 4px;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.sheet-close {
+  appearance: none;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.job-desc-full {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+.detail-block {
+  margin-top: 22px;
+}
+
+.detail-block h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.pay-median {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tradeoff {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.tasks {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tasks li {
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.chip-related {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
 }
 
 .actions {

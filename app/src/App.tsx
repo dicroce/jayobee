@@ -73,6 +73,7 @@ export function App() {
             <Results
               count={game.count}
               results={results}
+              explainJob={game.explainJob}
               onKeepPlaying={() => setView("play")}
               onReset={() => {
                 game.reset();

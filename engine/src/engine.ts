@@ -310,6 +310,43 @@ export function readout(
   return { likes, dislikes, stability };
 }
 
+export interface MatchReason {
+  axis: string;
+  block: string;
+  /** whether this job scores high or low on the axis */
+  level: "high" | "low";
+  /** w_i · v_i — how much this axis pushed the match up (or down) */
+  contribution: number;
+}
+
+/**
+ * Why a particular job matched: the utility u = Σ wᵢ·vᵢ decomposes per axis, so the
+ * axes with the largest positive wᵢ·vᵢ are the reasons it ranks well for this user
+ * (either "you value X and the job is high on it" or "you avoid X and it's low on it").
+ * Negative terms are the trade-offs pulling it down.
+ */
+export function explainMatch(
+  model: PreferenceModel,
+  job: Job,
+  axes: readonly Axis[],
+  opts: { topK?: number } = {},
+): { reasons: MatchReason[]; tradeoffs: MatchReason[] } {
+  const topK = opts.topK ?? 3;
+  const contribs: MatchReason[] = axes.map((a, i) => ({
+    axis: a.name,
+    block: a.block,
+    level: job.v[i] >= 0 ? "high" : "low",
+    contribution: model.w[i] * job.v[i],
+  }));
+  const sorted = [...contribs].sort((a, b) => b.contribution - a.contribution);
+  const reasons = sorted.filter((c) => c.contribution > 1e-6).slice(0, topK);
+  const tradeoffs = sorted
+    .filter((c) => c.contribution < -1e-6)
+    .slice(-topK)
+    .reverse();
+  return { reasons, tradeoffs };
+}
+
 /* ------------------------------------------------------------------ */
 /* Pair selection                                                      */
 /* ------------------------------------------------------------------ */

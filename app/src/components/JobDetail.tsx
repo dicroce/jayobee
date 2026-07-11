@@ -33,6 +33,13 @@ export function JobDetail({ job, explanation, onClose, onOpenRelated }: Props) {
 
         <p className="job-desc-full">{job.desc}</p>
 
+        {job.imputed && (
+          <p className="imputed-note">
+            ⓘ Estimated profile — O*NET hasn't rated this occupation yet, so its fit is
+            inferred from closely related careers.
+          </p>
+        )}
+
         {median && (
           <div className="detail-block">
             <div className="pay-median">{median}</div>

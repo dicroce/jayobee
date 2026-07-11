@@ -465,6 +465,16 @@ body {
   margin: 10px 0 0;
 }
 
+.imputed-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .detail-block {
   margin-top: 22px;
 }

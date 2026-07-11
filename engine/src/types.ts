@@ -35,6 +35,8 @@ export interface Job {
   jobZone?: JobZone | null;
   tasks?: string[];
   related?: RelatedJob[];
+  /** true when the taste vector was estimated from related occupations (no O*NET ratings). */
+  imputed?: boolean;
 }
 
 /** The static artifact emitted by the Python ETL (data/taste_vectors.json). */

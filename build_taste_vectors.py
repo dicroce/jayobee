@@ -163,6 +163,51 @@ def load_details(conn):
     return detail
 
 
+def impute_missing(conn, kept_vecs, wage_for, detail, min_donors=3, max_donors=10):
+    """
+    Rescue occupations that lack O*NET taste ratings (newer SOC splits like Software
+    Developers) by averaging the taste vectors of their O*NET-curated related
+    occupations that DO have data. Skips "All Other" catch-alls (not real careers)
+    and anything with too few donors to estimate reliably. Imputed jobs are flagged.
+    """
+    kept = set(kept_vecs)
+    rel = {}
+    for code, relc in conn.execute(
+        "SELECT onetsoc_code, related_onetsoc_code FROM related_occupations "
+        "ORDER BY onetsoc_code, related_index"
+    ):
+        rel.setdefault(code, []).append(relc)
+
+    out = []
+    for code, title, desc in conn.execute(
+        "SELECT onetsoc_code, title, description FROM occupation_data"
+    ):
+        if code in kept or "All Other" in title:
+            continue
+        donors = [r for r in rel.get(code, []) if r in kept][:max_donors]
+        if len(donors) < min_donors:
+            continue
+        acc = np.zeros(len(next(iter(kept_vecs.values()))))
+        wsum = 0.0
+        for i, dcode in enumerate(donors):  # inverse-rank weighting: closest matters most
+            w = 1.0 / (i + 1)
+            acc += kept_vecs[dcode] * w
+            wsum += w
+        vec = acc / wsum
+        out.append(
+            {
+                "code": code,
+                "title": title,
+                "desc": desc,
+                "v": [round(float(x), 4) for x in vec],
+                "wage": wage_for(code),
+                "imputed": True,
+                **detail(code),
+            }
+        )
+    return out
+
+
 def axis_weights():
     """Per-axis multipliers: block-balanced (1/sqrt(n_block)) with interests emphasized."""
     blocks = [b for (_, _, _, _, b) in AXES]
@@ -209,6 +254,22 @@ def main():
 
     detail = load_details(conn)  # job zone, core tasks, related careers
 
+    jobs = [
+        {
+            "code": codes[i],
+            "title": titles[i],
+            "desc": descs[i],
+            "v": [round(float(x), 4) for x in zmat[i]],
+            "wage": wage_for(codes[i]),
+            **detail(codes[i]),
+        }
+        for i in range(n)
+    ]
+    kept_vecs = {codes[i]: zmat[i] for i in range(n)}
+    imputed = impute_missing(conn, kept_vecs, wage_for, detail)
+    jobs.extend(imputed)
+    print(f"Imputed {len(imputed)} occupations from related neighbors (total {len(jobs)} jobs)")
+
     # --- diagnostic 1: per-axis mean/std (native units) ---
     print("\nPer-axis native mean / std (spot degenerate axes):")
     for j, (eid, table, scale, label, block) in enumerate(AXES):
@@ -246,7 +307,7 @@ def main():
     artifact = {
         "meta": {
             "source": "O*NET (onet.db)",
-            "n_jobs": n,
+            "n_jobs": len(jobs),
             "n_axes": d,
             "normalization": (
                 f"z-score per axis, then block-balanced (1/sqrt n_block) "
@@ -256,17 +317,7 @@ def main():
         "axes": [
             {"name": label, "block": block} for (_, _, _, label, block) in AXES
         ],
-        "jobs": [
-            {
-                "code": codes[i],
-                "title": titles[i],
-                "desc": descs[i],
-                "v": [round(float(x), 4) for x in zmat[i]],
-                "wage": wage_for(codes[i]),
-                **detail(codes[i]),
-            }
-            for i in range(n)
-        ],
+        "jobs": jobs,
     }
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(artifact, f, ensure_ascii=False)

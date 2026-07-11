@@ -34,7 +34,6 @@ export interface GameResults {
   likes: AxisStat[];
   dislikes: AxisStat[];
   stability: number;
-  top: ScoredJob[];
 }
 
 export function usePreferenceGame() {
@@ -101,15 +100,21 @@ export function usePreferenceGame() {
 
   const skip = useCallback(() => nextPair(), [nextPair]);
 
-  const results = useCallback((): GameResults => {
+  // The "you" part of the results — independent of any salary filter.
+  const results = useCallback(
+    (): GameResults => readout(modelRef.current!, dataset.axes, { topK: 5 }),
+    [],
+  );
+
+  // The matched-careers list, optionally floored by median wage. Filtering happens
+  // on the OUTPUT only — the preference model is always learned over all jobs.
+  const matches = useCallback((minWage = 0): ScoredJob[] => {
     const model = modelRef.current!;
-    const { likes, dislikes, stability } = readout(model, dataset.axes, { topK: 5 });
-    return {
-      likes,
-      dislikes,
-      stability,
-      top: diverseTopJobs(model, dataset.jobs, { count: 12 }),
-    };
+    const pool =
+      minWage > 0
+        ? dataset.jobs.filter((j) => (j.wage?.median ?? -1) >= minWage)
+        : dataset.jobs;
+    return diverseTopJobs(model, pool, { count: 12 });
   }, []);
 
   const explainJob = useCallback(
@@ -125,5 +130,5 @@ export function usePreferenceGame() {
     nextPair();
   }, [dim, nextPair]);
 
-  return { pair, count, choose, skip, results, reset, explainJob };
+  return { pair, count, choose, skip, results, matches, reset, explainJob };
 }

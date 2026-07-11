@@ -328,6 +328,24 @@ body {
   color: var(--accent-text);
 }
 
+.pay-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+
+.pay-filter label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pay-filter input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
 .matches {
   list-style: none;
   margin: 0;

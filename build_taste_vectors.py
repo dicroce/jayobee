@@ -22,6 +22,8 @@ import os
 import math
 import numpy as np
 
+from load_wages import load_wages
+
 DB = "onet.db"
 OUT = os.path.join("data", "taste_vectors.json")
 
@@ -149,6 +151,19 @@ def main():
     zmat, mean, std = zscore(raw)
     zmat = zmat * axis_weights()  # block-balance + interest emphasis
 
+    # optional salary join (BLS OEWS, by 6-digit SOC = first 7 chars of onetsoc_code)
+    wages = load_wages()
+    def wage_for(code):
+        w = wages.get(code[:7])
+        if not w:
+            return None
+        return {"median": w["median"], "p10": w["p10"], "p90": w["p90"]}
+    wage_hits = sum(1 for c in codes if wages.get(c[:7]))
+    if wages:
+        print(f"Salary: matched {wage_hits}/{n} occupations from OEWS ({len(wages)} SOC codes loaded)")
+    else:
+        print("Salary: no data/oes_national.xlsx found — skipping wages (jobs get wage=null)")
+
     # --- diagnostic 1: per-axis mean/std (native units) ---
     print("\nPer-axis native mean / std (spot degenerate axes):")
     for j, (eid, table, scale, label, block) in enumerate(AXES):
@@ -202,6 +217,7 @@ def main():
                 "title": titles[i],
                 "desc": descs[i],
                 "v": [round(float(x), 4) for x in zmat[i]],
+                "wage": wage_for(codes[i]),
             }
             for i in range(n)
         ],

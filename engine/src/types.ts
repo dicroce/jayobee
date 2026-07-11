@@ -5,12 +5,21 @@ export interface Axis {
   block: string;
 }
 
+/** Annual wage percentiles (BLS OEWS), USD. Display/filter only — never a taste axis. */
+export interface Wage {
+  median: number;
+  p10: number | null;
+  p90: number | null;
+}
+
 /** One occupation with its z-scored taste vector `v` (length === axes.length). */
 export interface Job {
   code: string;
   title: string;
   desc: string;
   v: number[];
+  /** null when OEWS has no wage for this SOC (or no wage file was built in). */
+  wage?: Wage | null;
 }
 
 /** The static artifact emitted by the Python ETL (data/taste_vectors.json). */

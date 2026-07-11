@@ -1,5 +1,9 @@
+import { useState } from "react";
 import { confidenceTier, type AxisStat } from "@engine/engine";
 import type { GameResults } from "../usePreferenceGame";
+
+const usd = (n?: number | null) =>
+  n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
 
 interface Props {
   count: number;
@@ -24,6 +28,13 @@ export function Results({ count, results, onKeepPlaying, onReset }: Props) {
   const { likes, dislikes, stability, top } = results;
   const pct = Math.round(stability * 100);
   const settled = pct >= 60;
+
+  const [sort, setSort] = useState<"fit" | "pay">("fit");
+  const hasWages = top.some((s) => s.job.wage);
+  const shown =
+    sort === "pay"
+      ? [...top].sort((a, b) => (b.job.wage?.median ?? -1) - (a.job.wage?.median ?? -1))
+      : top;
 
   return (
     <div className="results">
@@ -65,14 +76,39 @@ export function Results({ count, results, onKeepPlaying, onReset }: Props) {
       </section>
 
       <section>
-        <h3>Careers that fit</h3>
-        <ol className="matches">
-          {top.map((s) => (
+        <div className="matches-head">
+          <h3>Careers that fit</h3>
+          {hasWages && (
+            <div className="sort-toggle" role="group" aria-label="Sort matches">
+              <button
+                className={sort === "fit" ? "on" : ""}
+                onClick={() => setSort("fit")}
+                type="button"
+              >
+                Best fit
+              </button>
+              <button
+                className={sort === "pay" ? "on" : ""}
+                onClick={() => setSort("pay")}
+                type="button"
+              >
+                Top pay
+              </button>
+            </div>
+          )}
+        </div>
+        <ul className="matches">
+          {shown.map((s) => (
             <li key={s.job.code}>
               <span className="match-title">{s.job.title}</span>
+              {hasWages && (
+                <span className="match-wage" title="Median annual wage (BLS OEWS 2025)">
+                  {usd(s.job.wage?.median)}
+                </span>
+              )}
             </li>
           ))}
-        </ol>
+        </ul>
       </section>
 
       <div className="actions">

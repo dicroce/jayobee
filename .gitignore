@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# BLS OEWS source download (wages get baked into data/taste_vectors.json by the ETL)
+data/oes_national.xlsx
+data/national_M*_dl.xlsx
+data/oesm*nat.zip

@@ -316,6 +316,57 @@ body {
   color: var(--text);
 }
 
+/* ---- intro / how it works ---- */
+.intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 24px 28px;
+}
+
+.intro h2 {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  margin: 12px 0 8px;
+}
+
+.intro-lead {
+  color: var(--muted);
+  font-size: 15.5px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.intro-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.intro-points li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.intro-emoji {
+  font-size: 22px;
+  flex: 0 0 auto;
+  line-height: 1.2;
+}
+
+.intro-start {
+  width: 100%;
+  margin-top: 28px;
+  padding: 15px;
+  font-size: 16px;
+}
+
 /* ---- play ---- */
 .play {
   flex: 1;

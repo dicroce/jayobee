@@ -3,11 +3,11 @@ import { JobCard } from "./JobCard";
 import { Results } from "./Results";
 import { usePreferenceGame } from "../usePreferenceGame";
 
-type View = "play" | "results";
+type View = "intro" | "play" | "results";
 
 export function Discover({ onHome }: { onHome: () => void }) {
   const game = usePreferenceGame();
-  const [view, setView] = useState<View>("play");
+  const [view, setView] = useState<View>("intro");
 
   const results = useMemo(
     () => (view === "results" ? game.results() : null),
@@ -45,7 +45,45 @@ export function Discover({ onHome }: { onHome: () => void }) {
         </div>
       </header>
 
-      {view === "play" ? (
+      {view === "intro" ? (
+        <main className="intro">
+          <h2>How it works</h2>
+          <p className="intro-lead">
+            You'll see two jobs at a time. Pick the one you'd rather do — that's the
+            whole game.
+          </p>
+          <ul className="intro-points">
+            <li>
+              <span className="intro-emoji">📈</span>
+              <span>The more choices you make, the sharper your results get.</span>
+            </li>
+            <li>
+              <span className="intro-emoji">🎯</span>
+              <span>
+                Aim for at least <strong>40 choices</strong> before your results get
+                really good.
+              </span>
+            </li>
+            <li>
+              <span className="intro-emoji">🤷</span>
+              <span>
+                Hate both? Skim the descriptions and pick the one you hate <em>least</em>.
+              </span>
+            </li>
+            <li>
+              <span className="intro-emoji">⚡</span>
+              <span>Don't get bogged down. Go, go, go!</span>
+            </li>
+          </ul>
+          <button
+            className="btn btn-primary intro-start"
+            onClick={() => setView("play")}
+            type="button"
+          >
+            {game.count > 0 ? "Keep playing" : "Start"}
+          </button>
+        </main>
+      ) : view === "play" ? (
         <main className="play">
           <p className="prompt">Which would you rather do?</p>
 

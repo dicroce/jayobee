@@ -3,6 +3,7 @@ import { confidenceTier, type AxisStat, type ScoredJob } from "@engine/engine";
 import type { Job } from "@engine/types";
 import type { GameResults } from "../usePreferenceGame";
 import { dataset } from "../data";
+import { shareResults } from "../report";
 
 const usd = (n?: number | null) =>
   n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
@@ -39,6 +40,7 @@ export function Results({ count, results, matches, onOpenJob, onKeepPlaying, onR
 
   const [sort, setSort] = useState<"fit" | "pay">("fit");
   const [minWage, setMinWage] = useState(0);
+  const [sharing, setSharing] = useState(false);
 
   const shown = useMemo(() => {
     const list = matches(minWage);
@@ -46,6 +48,17 @@ export function Results({ count, results, matches, onOpenJob, onKeepPlaying, onR
       ? [...list].sort((a, b) => (b.job.wage?.median ?? -1) - (a.job.wage?.median ?? -1))
       : list;
   }, [matches, minWage, sort]);
+
+  const handleShare = async () => {
+    setSharing(true);
+    try {
+      await shareResults({ count, stability, likes, dislikes, matches: shown });
+    } catch (err) {
+      console.error("share failed", err);
+    } finally {
+      setSharing(false);
+    }
+  };
 
   return (
     <div className="results">
@@ -150,6 +163,15 @@ export function Results({ count, results, matches, onOpenJob, onKeepPlaying, onR
           </ul>
         )}
       </section>
+
+      <button
+        className="btn btn-ghost share-btn"
+        onClick={handleShare}
+        disabled={sharing}
+        type="button"
+      >
+        {sharing ? "Preparing…" : "📤 Share results (PDF)"}
+      </button>
 
       <div className="actions">
         <button className="btn btn-primary" onClick={onKeepPlaying} type="button">

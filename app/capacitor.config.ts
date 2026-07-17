@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.jayobee.app",
+  appId: "com.dicroce.jayobee",
   appName: "jayobee",
   webDir: "dist",
 };

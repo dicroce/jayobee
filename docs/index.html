@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>jayobee — find work that actually fits</title>
+    <meta
+      name="description"
+      content="jayobee helps you discover careers that fit you by playing a simple game. Explore 900+ careers, see real salaries, and find out why each one fits. 100% private."
+    />
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #faf8f6;
+        color: #26242a;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 3.5rem 1.25rem 4rem;
+      }
+      .hero { text-align: center; }
+      .logo {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+        box-shadow: 0 6px 24px rgba(198, 40, 40, 0.18);
+      }
+      h1 {
+        font-size: 2.4rem;
+        letter-spacing: -0.02em;
+        margin: 1rem 0 0.25rem;
+      }
+      .tagline { font-size: 1.25rem; color: #6b6560; margin: 0 0 1.5rem; }
+      .lede {
+        font-size: 1.08rem;
+        max-width: 34rem;
+        margin: 0 auto 2.5rem;
+        color: #3a3630;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin: 2.5rem 0;
+      }
+      @media (min-width: 40rem) {
+        .cards { grid-template-columns: repeat(3, 1fr); }
+      }
+      .card {
+        border: 1px solid #ece6df;
+        background: #fff;
+        border-radius: 16px;
+        padding: 1.25rem;
+      }
+      .card h3 { margin: 0 0 0.35rem; font-size: 1.1rem; }
+      .card p { margin: 0; font-size: 0.95rem; color: #6b6560; }
+      .card .emoji { font-size: 1.6rem; }
+      .soon {
+        text-align: center;
+        color: #8a8378;
+        font-size: 0.95rem;
+        margin-top: 2rem;
+      }
+      .accent { color: #c62828; }
+      footer {
+        margin-top: 3.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #e7e1da;
+        text-align: center;
+        color: #8a8378;
+        font-size: 0.85rem;
+      }
+      footer a { color: #1f6f3f; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="hero">
+        <img class="logo" src="./logo.png" alt="jayobee logo" />
+        <h1>jayobee</h1>
+        <p class="tagline">Find work that actually fits.</p>
+        <p class="lede">
+          Play a quick game — pick the job you'd rather do, over and over — and
+          jayobee surfaces the career preferences you didn't know you had. Then
+          explore 900+ careers one trait at a time, see real median salaries, and
+          get a plain-English "why it fits you" for every match.
+        </p>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="emoji">🧭</div>
+          <h3>Discover</h3>
+          <p>A simple "this or that" game that learns what you value.</p>
+        </div>
+        <div class="card">
+          <div class="emoji">🗺️</div>
+          <h3>Explore</h3>
+          <p>Wander the map of careers one trait at a time.</p>
+        </div>
+        <div class="card">
+          <div class="emoji">🔒</div>
+          <h3>100% private</h3>
+          <p>No accounts, no ads. Everything stays on your phone.</p>
+        </div>
+      </div>
+
+      <p class="soon"><span class="accent">Coming soon</span> to Google Play and the App Store.</p>
+
+      <footer>
+        <a href="./privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="mailto:dicroce@gmail.com">Contact</a>
+        <br />
+        jayobee © 2026.
+      </footer>
+    </main>
+  </body>
+</html>

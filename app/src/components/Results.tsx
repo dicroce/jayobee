@@ -1,14 +1,8 @@
 import { useMemo, useState } from "react";
-import {
-  confidenceTier,
-  type AxisStat,
-  type MatchReason,
-  type ScoredJob,
-} from "@engine/engine";
+import { confidenceTier, type AxisStat, type ScoredJob } from "@engine/engine";
 import type { Job } from "@engine/types";
 import type { GameResults } from "../usePreferenceGame";
-import { dataset, jobByCode } from "../data";
-import { JobDetail } from "./JobDetail";
+import { dataset } from "../data";
 
 const usd = (n?: number | null) =>
   n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
@@ -21,7 +15,7 @@ interface Props {
   count: number;
   results: GameResults;
   matches: (minWage?: number) => ScoredJob[];
-  explainJob: (job: Job) => { reasons: MatchReason[]; tradeoffs: MatchReason[] };
+  onOpenJob: (job: Job) => void;
   onKeepPlaying: () => void;
   onReset: () => void;
 }
@@ -38,12 +32,11 @@ function Chip({ stat, kind }: { stat: AxisStat; kind: "like" | "dislike" }) {
   );
 }
 
-export function Results({ count, results, matches, explainJob, onKeepPlaying, onReset }: Props) {
+export function Results({ count, results, matches, onOpenJob, onKeepPlaying, onReset }: Props) {
   const { likes, dislikes, stability } = results;
   const pct = Math.round(stability * 100);
   const settled = pct >= 60;
 
-  const [selected, setSelected] = useState<Job | null>(null);
   const [sort, setSort] = useState<"fit" | "pay">("fit");
   const [minWage, setMinWage] = useState(0);
 
@@ -139,7 +132,7 @@ export function Results({ count, results, matches, explainJob, onKeepPlaying, on
           <ul className="matches">
             {shown.map((s) => (
               <li key={s.job.code}>
-                <button className="match-row" onClick={() => setSelected(s.job)} type="button">
+                <button className="match-row" onClick={() => onOpenJob(s.job)} type="button">
                   <span className="match-title">{s.job.title}</span>
                   <span className="match-right">
                     {HAS_WAGES && (
@@ -166,18 +159,6 @@ export function Results({ count, results, matches, explainJob, onKeepPlaying, on
           Start over
         </button>
       </div>
-
-      {selected && (
-        <JobDetail
-          job={selected}
-          explanation={explainJob(selected)}
-          onClose={() => setSelected(null)}
-          onOpenRelated={(code) => {
-            const j = jobByCode.get(code);
-            if (j) setSelected(j);
-          }}
-        />
-      )}
     </div>
   );
 }

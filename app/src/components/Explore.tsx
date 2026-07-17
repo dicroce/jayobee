@@ -3,6 +3,7 @@ import { stepAlongAxis } from "@engine/engine";
 import type { Job } from "@engine/types";
 import { dataset, jobByCode } from "../data";
 import { JobInfo } from "./JobInfo";
+import { useBackHandler } from "../backNav";
 
 interface Crumb {
   job: Job;
@@ -23,11 +24,27 @@ const AXES_BY_BLOCK = (() => {
 })();
 
 export function Explore({ onHome }: { onHome: () => void }) {
+  const [started, setStarted] = useState(false);
   const [trail, setTrail] = useState<Crumb[]>(() => [{ job: randomJob(), via: null }]);
   const [showMore, setShowMore] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
   const current = trail[trail.length - 1].job;
+
+  // hardware back: undo the last step, else leave to Home
+  useBackHandler(() => {
+    if (!started) {
+      onHome();
+      return true;
+    }
+    if (trail.length > 1) {
+      setNote(null);
+      setTrail(trail.slice(0, -1));
+      return true;
+    }
+    onHome();
+    return true;
+  }, [started, trail, onHome]);
 
   const profile = useMemo(() => {
     const p = dataset.axes
@@ -80,6 +97,49 @@ export function Explore({ onHome }: { onHome: () => void }) {
       </div>
     </div>
   );
+
+  if (!started) {
+    return (
+      <div className="app">
+        <header className="topbar">
+          <button className="back-btn" onClick={onHome} type="button">
+            ‹ Menu
+          </button>
+        </header>
+        <main className="intro">
+          <h2>Explore the map of careers</h2>
+          <p className="intro-lead">
+            No preferences needed — just wander and see what's out there and how it all
+            connects.
+          </p>
+          <ul className="intro-points">
+            <li>
+              <span className="intro-emoji">📍</span>
+              <span>You start on a random job. Hit 🎲 anytime for a new one.</span>
+            </li>
+            <li>
+              <span className="intro-emoji">🧭</span>
+              <span>
+                Tap <strong>more</strong> or <strong>less</strong> on any trait to step
+                to a nearby job that's stronger or weaker in it.
+              </span>
+            </li>
+            <li>
+              <span className="intro-emoji">🍞</span>
+              <span>Your trail shows the path — tap any step to jump back.</span>
+            </li>
+          </ul>
+          <button
+            className="btn btn-primary intro-start"
+            onClick={() => setStarted(true)}
+            type="button"
+          >
+            Start exploring
+          </button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">

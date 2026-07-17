@@ -1,18 +1,37 @@
 import { useMemo, useState } from "react";
 import { JobCard } from "./JobCard";
 import { Results } from "./Results";
+import { JobDetail } from "./JobDetail";
 import { usePreferenceGame } from "../usePreferenceGame";
+import { jobByCode } from "../data";
+import { useBackHandler } from "../backNav";
+import type { Job } from "@engine/types";
 
 type View = "intro" | "play" | "results";
 
 export function Discover({ onHome }: { onHome: () => void }) {
   const game = usePreferenceGame();
   const [view, setView] = useState<View>("intro");
+  const [detailJob, setDetailJob] = useState<Job | null>(null);
 
   const results = useMemo(
     () => (view === "results" ? game.results() : null),
     [view, game],
   );
+
+  // hardware back: close the sheet, else step back a view, else leave to Home
+  useBackHandler(() => {
+    if (detailJob) {
+      setDetailJob(null);
+      return true;
+    }
+    if (view === "results") {
+      setView("play");
+      return true;
+    }
+    onHome();
+    return true;
+  }, [detailJob, view, onHome]);
 
   const [a, b] = game.pair;
 
@@ -113,7 +132,7 @@ export function Discover({ onHome }: { onHome: () => void }) {
               count={game.count}
               results={results}
               matches={game.matches}
-              explainJob={game.explainJob}
+              onOpenJob={setDetailJob}
               onKeepPlaying={() => setView("play")}
               onReset={() => {
                 game.reset();
@@ -122,6 +141,18 @@ export function Discover({ onHome }: { onHome: () => void }) {
             />
           )}
         </main>
+      )}
+
+      {detailJob && (
+        <JobDetail
+          job={detailJob}
+          explanation={game.explainJob(detailJob)}
+          onClose={() => setDetailJob(null)}
+          onOpenRelated={(code) => {
+            const j = jobByCode.get(code);
+            if (j) setDetailJob(j);
+          }}
+        />
       )}
     </div>
   );

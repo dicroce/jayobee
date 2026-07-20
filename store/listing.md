@@ -82,7 +82,7 @@ career test,job finder,career quiz,career path,find a job,salary,vocation,aptitu
 *(~99 chars. Don't repeat "jayobee" - it's already in the name.)*
 
 ### Description (max 4000)
-Reuse the Google Play full description above (Apple doesn't render bullets specially, but the • lines read fine).
+Reuse the Google Play full description above — **including the DATA & SOURCES + disclaimer block**, which Apple requires too for apps surfacing government data (App Store Review Guideline 5.2 / misleading content). Apple doesn't render bullets specially, but the • lines read fine.
 
 ---
 

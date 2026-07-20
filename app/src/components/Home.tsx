@@ -27,6 +27,24 @@ export function Home({ onPick }: { onPick: (a: Activity) => void }) {
           </span>
         </button>
       </div>
+
+      <footer className="home-footer">
+        <p>
+          Career data from{" "}
+          <a href="https://www.onetcenter.org" target="_blank" rel="noopener noreferrer">
+            O*NET
+          </a>{" "}
+          (sponsored by the U.S. Department of Labor) and the{" "}
+          <a href="https://www.bls.gov/oes/" target="_blank" rel="noopener noreferrer">
+            U.S. Bureau of Labor Statistics
+          </a>
+          .
+        </p>
+        <p>
+          jayobee is an independent app and is not affiliated with, endorsed by, or
+          representing any government agency.
+        </p>
+      </footer>
     </div>
   );
 }

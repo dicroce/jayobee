@@ -137,6 +137,23 @@ body {
   line-height: 1.45;
 }
 
+.home-footer {
+  margin-top: auto;
+  padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.home-footer p {
+  margin: 0 0 6px;
+}
+
+.home-footer a {
+  color: var(--accent);
+}
+
 /* ---- explore ---- */
 .explore {
   padding: 4px 20px 40px;

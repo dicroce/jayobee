@@ -41,7 +41,7 @@ export function JobInfo({ job, explanation, onOpenRelated }: Props) {
           <div className="pay-median">{median}</div>
           <div className="muted">
             median annual wage
-            {p10 && p90 ? ` · ${p10}–${p90} range` : ""}
+            {p10 && p90 ? ` · ${p10}–${p90} range` : ""} · source: U.S. BLS
           </div>
         </div>
       )}
